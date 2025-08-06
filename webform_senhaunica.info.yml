@@ -1,0 +1,5 @@
+name: 'webform_senhaunica'
+type: module
+description: 'Webform Senha única'
+core_version_requirement: ^10.3 || ^11.0
+package: 'Universidade de São Paulo'
