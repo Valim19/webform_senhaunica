@@ -1,0 +1,19 @@
+<?php 
+
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function webform_senhaunica_form_webform_settings_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  /** @var \Drupal\webform\WebformInterface $webform */
+  $webform = $form_state->getFormObject()->getEntity();
+
+  // Adiciona novo campo na aba "Configurações"
+  $form['settings']['habilitar_senhaunica'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Habilitar senha única'),
+    '#default_value' => $webform->getSetting('habilitar_senhaunica'),
+    '#description' => t('Se marcado, ativa a funcionalidade de autenticação por senha única'),
+  ];
+}
