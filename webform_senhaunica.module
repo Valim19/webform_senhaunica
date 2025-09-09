@@ -1,19 +1,129 @@
-<?php 
+<?php
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\webform\WebformInterface;
+use Drupal\webform\WebformSubmissionInterface;
 
 /**
- * Implements hook_form_FORM_ID_alter().
+ * Adiciona a checkbox na aba de configurações do Webform.
  */
-function webform_senhaunica_form_webform_settings_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+function webform_senhaunica_webform_third_party_settings_form_alter(array &$form, FormStateInterface $form_state) {
   /** @var \Drupal\webform\WebformInterface $webform */
   $webform = $form_state->getFormObject()->getEntity();
 
-  // Adiciona novo campo na aba "Configurações"
-  $form['settings']['habilitar_senhaunica'] = [
+  $form['third_party_settings']['webform_senhaunica'] = [
+    '#type' => 'details',
+    '#title' => t('Universidade de São Paulo'),
+    '#open' => FALSE,
+  ];
+
+  $form['third_party_settings']['webform_senhaunica']['habilitar_senhaunica'] = [
     '#type' => 'checkbox',
     '#title' => t('Habilitar senha única'),
-    '#default_value' => $webform->getSetting('habilitar_senhaunica'),
-    '#description' => t('Se marcado, ativa a funcionalidade de autenticação por senha única'),
+    '#default_value' => $webform->getThirdPartySetting('webform_senhaunica', 'habilitar_senhaunica', FALSE),
   ];
+}
+
+/**
+ * Ao salvar o webform, garante que os campos existam (ou sejam removidos)
+ * conforme o setting "habilitar_senhaunica".
+ */
+function webform_senhaunica_entity_presave(EntityInterface $entity) {
+  if (!$entity instanceof WebformInterface) {
+    return;
+  }
+
+  $enabled = (bool) $entity->getThirdPartySetting('webform_senhaunica', 'habilitar_senhaunica', FALSE);
+
+  // Definição dos campos que queremos controlar.
+  $keys = [
+    'wsuserid'     => 'WS User ID',
+    'loginUsuario' => 'Login do usuário',
+    'nomeUsuario'  => 'Nome do usuário',
+  ];
+
+  if ($enabled) {
+    foreach ($keys as $key => $title) {
+      $entity->setElementProperties($key, [
+        '#type'    => 'hidden',
+        '#title'   => $title,
+        '#private' => TRUE,
+      ]);
+    }
+  } else {
+    foreach (array_keys($keys) as $key) {
+      $entity->deleteElement($key);
+    }
+  }
+}
+
+/**
+ * Faz os elementos persistirem, mesmo que alguém tente apagá-los manualmente.
+ */
+function webform_senhaunica_entity_load(array $entities) {
+  foreach ($entities as $entity) {
+    if (!$entity instanceof WebformInterface) {
+      continue;
+    }
+
+    $enabled = (bool) $entity->getThirdPartySetting('webform_senhaunica', 'habilitar_senhaunica', FALSE);
+
+    if ($enabled) {
+      $keys = [
+        'wsuserid'     => 'WS User ID',
+        'loginUsuario' => 'Login do usuário',
+        'nomeUsuario'  => 'Nome do usuário',
+      ];
+
+      foreach ($keys as $key => $title) {
+        // Se o elemento não existe, recria.
+        if (!$entity->getElement($key)) {
+          $entity->setElementProperties($key, [
+            '#type'    => 'hidden',
+            '#title'   => $title,
+            '#private' => TRUE,
+          ]);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Altera apenas o formulário de submissão do Webform (não afeta a aba "Resultados").
+ */
+function webform_senhaunica_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  // Garante que é um formulário de submissão de webform.
+  if (strpos($form_id, 'webform_submission_') === 0 && isset($form['#webform_id'])) {
+    $form_object = $form_state->getFormObject();
+
+    if ($form_object && method_exists($form_object, 'getWebform')) {
+      $webform = $form_object->getWebform();
+      $enabled = (bool) $webform->getThirdPartySetting('webform_senhaunica', 'habilitar_senhaunica', FALSE);
+
+      if ($enabled && empty($form_state->getBuildInfo()['base_form_id'])) {
+        \Drupal::messenger()->addError(t('Você precisa autenticar antes de enviar este formulário.'));
+        $form['#access'] = FALSE;
+      }
+    }
+  }
+}
+
+/**
+ * Exemplo: executa ações fictícias após salvar uma submissão de webform.
+ */
+function webform_senhaunica_webform_submission_insert(WebformSubmissionInterface $webform_submission) {
+  $webform_id = $webform_submission->getWebform()->id();
+
+  if ($webform_id === 'webform_senhaunica') {
+    // Valores fictícios que depois serão substituídos.
+    $data = $webform_submission->getData();
+    $data['wsuserid'] = 12345;
+    $data['loginUsuario'] = 'usuario_teste';
+    $data['nomeUsuario'] = 'Nome de Exemplo';
+
+    $webform_submission->setData($data);
+    $webform_submission->save();
+  }
 }
