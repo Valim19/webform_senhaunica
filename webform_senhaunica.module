@@ -4,6 +4,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\webform\WebformInterface;
 use Drupal\webform\WebformSubmissionInterface;
+use Uspdev\Senhaunica\Senhaunica;
 
 /**
  * Adiciona a checkbox na aba de configurações do Webform.
@@ -23,6 +24,25 @@ function webform_senhaunica_webform_third_party_settings_form_alter(array &$form
     '#title' => t('Habilitar senha única'),
     '#default_value' => $webform->getThirdPartySetting('webform_senhaunica', 'habilitar_senhaunica', FALSE),
   ];
+
+  $form['third_party_settings']['webform_senhaunica']['identifier'] = [
+    '#type' => 'textfield',
+    '#title' => t('Identificador'),
+    '#default_value' => $webform->getThirdPartySetting('webform_senhaunica', 'identifier'),
+  ];
+
+  $form['third_party_settings']['webform_senhaunica']['secret'] = [
+    '#type' => 'textfield',
+    '#title' => t('Secret'),
+    '#default_value' => $webform->getThirdPartySetting('webform_senhaunica', 'secret'),
+  ];
+
+    $form['third_party_settings']['webform_senhaunica']['callback_id'] = [
+    '#type' => 'textfield',
+    '#title' => t('Callback ID'),
+    '#default_value' => $webform->getThirdPartySetting('webform_senhaunica', 'callback_id'),
+  ];
+
 }
 
 /**
@@ -70,6 +90,16 @@ function webform_senhaunica_entity_load(array $entities) {
     $enabled = (bool) $entity->getThirdPartySetting('webform_senhaunica', 'habilitar_senhaunica', FALSE);
 
     if ($enabled) {
+      // Redirecinar o cidadão para login
+
+      $clientCredentials = [
+          'identifier' => $entity->getThirdPartySetting('webform_senhaunica', 'identifier'),
+          'secret' => $entity->getThirdPartySetting('webform_senhaunica', 'secret'),
+          'callback_id' => $entity->getThirdPartySetting('webform_senhaunica', 'callback_id')
+      ];
+
+      //Senhaunica::login($clientCredentials);
+
       $keys = [
         'wsuserid'     => 'WS User ID',
         'loginUsuario' => 'Login do usuário',

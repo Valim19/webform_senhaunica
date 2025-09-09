@@ -1,0 +1,7 @@
+webform_senhaunica.callback:
+  path: '/callback'
+  defaults:
+    _title: 'Callback'
+    _controller: '\Drupal\webform_senhaunica\Controller\WebformSenhaunicaController'
+  requirements:
+    _permission: 'access content'
